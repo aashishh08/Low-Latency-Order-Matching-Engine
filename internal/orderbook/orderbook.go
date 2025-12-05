@@ -1,16 +1,13 @@
 package orderbook
 
-import (
-	"order-matching-engine/internal/common"
-)
+import "order-matching-engine/internal/common"
 
-// PriceLevel represents all orders at a specific price level
+// PriceLevel represents all orders at a given price, in FIFO order.
 type PriceLevel struct {
 	Price  int64
-	Orders []*common.Order // FIFO queue of orders at this price
+	Orders []*common.Order // FIFO queue
 }
 
-// NewPriceLevel creates a new price level
 func NewPriceLevel(price int64) *PriceLevel {
 	return &PriceLevel{
 		Price:  price,
@@ -18,12 +15,10 @@ func NewPriceLevel(price int64) *PriceLevel {
 	}
 }
 
-// Enqueue adds an order to the end of the queue (FIFO)
 func (pl *PriceLevel) Enqueue(o *common.Order) {
 	pl.Orders = append(pl.Orders, o)
 }
 
-// Dequeue removes and returns the first order (FIFO)
 func (pl *PriceLevel) Dequeue() (*common.Order, bool) {
 	if len(pl.Orders) == 0 {
 		return nil, false
@@ -33,19 +28,20 @@ func (pl *PriceLevel) Dequeue() (*common.Order, bool) {
 	return o, true
 }
 
-// IsEmpty returns true if there are no orders at this price level
 func (pl *PriceLevel) IsEmpty() bool {
 	return len(pl.Orders) == 0
 }
 
-// SideBook manages all price levels for one side (BUY or SELL)
+// SideBook holds the orders for one side of the book (BUY or SELL).
+// - BUY: prices sorted descending (highest first)
+// - SELL: prices sorted ascending (lowest first)
 type SideBook struct {
-	IsBuy  bool
-	Levels map[int64]*PriceLevel // key = price
-	Prices []int64               // sorted slice of prices
+	IsBuy         bool
+	Levels        map[int64]*PriceLevel // price -> level
+	Prices        []int64               // sorted list of prices
+	TotalQuantity int64                 // total remaining quantity across all levels
 }
 
-// NewSideBook creates a new side book
 func NewSideBook(isBuy bool) *SideBook {
 	return &SideBook{
 		IsBuy:  isBuy,
@@ -54,21 +50,18 @@ func NewSideBook(isBuy bool) *SideBook {
 	}
 }
 
-// InsertPrice ensures a price level exists and is tracked in sorted order
+// InsertPrice ensures there is a price level, and inserts the price into
+// the sorted Prices slice if it is new.
 func (sb *SideBook) InsertPrice(price int64) *PriceLevel {
 	if level, ok := sb.Levels[price]; ok {
 		return level
 	}
-
 	level := NewPriceLevel(price)
 	sb.Levels[price] = level
 	sb.insertPriceSorted(price)
 	return level
 }
 
-// insertPriceSorted inserts a price into the sorted list
-// BUY side: highest price first (descending)
-// SELL side: lowest price first (ascending)
 func (sb *SideBook) insertPriceSorted(price int64) {
 	inserted := false
 	for i, p := range sb.Prices {
@@ -91,7 +84,6 @@ func (sb *SideBook) insertPriceSorted(price int64) {
 	}
 }
 
-// BestPrice returns the best price for this side
 func (sb *SideBook) BestPrice() (int64, bool) {
 	if len(sb.Prices) == 0 {
 		return 0, false
@@ -99,23 +91,47 @@ func (sb *SideBook) BestPrice() (int64, bool) {
 	return sb.Prices[0], true
 }
 
-// BestLevel returns the price level at the best price
 func (sb *SideBook) BestLevel() (*PriceLevel, bool) {
 	price, ok := sb.BestPrice()
 	if !ok {
 		return nil, false
 	}
-	return sb.Levels[price], true
+	level, ok := sb.Levels[price]
+	if !ok {
+		return nil, false
+	}
+	return level, true
 }
 
-// OrderBook represents the full order book for a symbol
+// RemovePrice removes a price level entirely if present.
+func (sb *SideBook) RemovePrice(price int64) {
+	delete(sb.Levels, price)
+	for i, p := range sb.Prices {
+		if p == price {
+			sb.Prices = append(sb.Prices[:i], sb.Prices[i+1:]...)
+			break
+		}
+	}
+}
+
+// AddOrder inserts an order into the appropriate price level and updates
+// the aggregate TotalQuantity with the order's remaining quantity.
+func (sb *SideBook) AddOrder(o *common.Order) {
+	remaining := o.Quantity - o.FilledQty
+	if remaining <= 0 {
+		return
+	}
+	level := sb.InsertPrice(o.Price)
+	level.Enqueue(o)
+	sb.TotalQuantity += remaining
+}
+
 type OrderBook struct {
 	Symbol string
-	Bids   *SideBook // BUY orders
-	Asks   *SideBook // SELL orders
+	Bids   *SideBook
+	Asks   *SideBook
 }
 
-// NewOrderBook creates a new order book for a symbol
 func NewOrderBook(symbol string) *OrderBook {
 	return &OrderBook{
 		Symbol: symbol,
