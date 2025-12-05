@@ -1,0 +1,140 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.test
+#1 transferring dockerfile: 981B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/golang:1.21-alpine
+#2 ...
+
+#3 [internal] load metadata for docker.io/library/alpine:latest
+#3 DONE 0.9s
+
+#2 [internal] load metadata for docker.io/library/golang:1.21-alpine
+#2 DONE 1.9s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 76B done
+#4 DONE 0.0s
+
+#5 [stage-1 1/4] FROM docker.io/library/alpine:latest@sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375
+#5 resolve docker.io/library/alpine:latest@sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375 0.0s done
+#5 DONE 0.0s
+
+#6 [tester 1/6] FROM docker.io/library/golang:1.21-alpine@sha256:2414035b086e3c42b99654c8b26e6f5b1b1598080d65fd03c7f499552ff4dc94
+#6 resolve docker.io/library/golang:1.21-alpine@sha256:2414035b086e3c42b99654c8b26e6f5b1b1598080d65fd03c7f499552ff4dc94 0.0s done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 2.69kB done
+#7 DONE 0.0s
+
+#8 [tester 3/6] COPY go.mod go.sum ./
+#8 CACHED
+
+#9 [tester 2/6] WORKDIR /app
+#9 CACHED
+
+#10 [tester 4/6] RUN go mod download
+#10 CACHED
+
+#11 [tester 5/6] COPY . .
+#11 DONE 0.0s
+
+#12 [tester 6/6] RUN echo "=== RUNNING COMPREHENSIVE TEST SUITE ===" &&     echo "" &&     echo "1. BUILD TEST" &&     go build ./... &&     echo "✅ Build successful" &&     echo "" &&     echo "2. UNIT TESTS" &&     go test ./... -v &&     echo "" &&     echo "3. RACE DETECTOR" &&     go test -race ./... &&     echo "" &&     echo "4. BENCHMARKS" &&     go test -bench=BenchmarkMatchingEngine -benchmem ./internal/engine &&     echo "" &&     echo "5. CODE VET" &&     go vet ./... &&     echo "" &&     echo "✅ ALL TESTS PASSED IN DOCKER"
+#12 0.197 === RUNNING COMPREHENSIVE TEST SUITE ===
+#12 0.197 
+#12 0.197 1. BUILD TEST
+#12 3.639 ✅ Build successful
+#12 3.639 
+#12 3.639 2. UNIT TESTS
+#12 4.456 ?   	order-matching-engine/cmd/server	[no test files]
+#12 4.456 ?   	order-matching-engine/internal/common	[no test files]
+#12 4.456 ?   	order-matching-engine/internal/config	[no test files]
+#12 4.456 ?   	order-matching-engine/internal/marketdata	[no test files]
+#12 4.456 ?   	order-matching-engine/internal/metrics	[no test files]
+#12 4.456 ?   	order-matching-engine/internal/orderbook	[no test files]
+#12 4.458 === RUN   TestBonusFeaturesIntegration
+#12 4.458 --- PASS: TestBonusFeaturesIntegration (0.00s)
+#12 4.458 === RUN   TestBonusFeaturesEdgeCases
+#12 4.458 --- PASS: TestBonusFeaturesEdgeCases (0.00s)
+#12 4.458 PASS
+#12 4.458 ok  	order-matching-engine/internal/api	0.002s
+#12 4.459 === RUN   TestProperty_FilledNeverExceedsTotal
+#12 4.459 --- PASS: TestProperty_FilledNeverExceedsTotal (0.00s)
+#12 4.459 === RUN   TestProperty_TradesUseRestingPrice
+#12 4.459 --- PASS: TestProperty_TradesUseRestingPrice (0.00s)
+#12 4.459 === RUN   TestProperty_OrderBookSorted
+#12 4.459 --- PASS: TestProperty_OrderBookSorted (0.00s)
+#12 4.459 === RUN   TestFullMatch
+#12 4.459 --- PASS: TestFullMatch (0.00s)
+#12 4.459 === RUN   TestPartialFill
+#12 4.459 --- PASS: TestPartialFill (0.00s)
+#12 4.459 === RUN   TestWalkTheBook
+#12 4.459 --- PASS: TestWalkTheBook (0.00s)
+#12 4.459 === RUN   TestMarketOrderFullFill
+#12 4.459 --- PASS: TestMarketOrderFullFill (0.00s)
+#12 4.459 === RUN   TestMarketOrderInsufficient
+#12 4.459 --- PASS: TestMarketOrderInsufficient (0.00s)
+#12 4.459 === RUN   TestFIFO
+#12 4.459 --- PASS: TestFIFO (0.00s)
+#12 4.459 === RUN   TestCancelOrder
+#12 4.459 --- PASS: TestCancelOrder (0.00s)
+#12 4.459 === RUN   FuzzPlaceOrder
+#12 4.459 === RUN   FuzzPlaceOrder/seed#0
+#12 4.459 === RUN   FuzzPlaceOrder/seed#1
+#12 4.459 --- PASS: FuzzPlaceOrder (0.00s)
+#12 4.459     --- PASS: FuzzPlaceOrder/seed#0 (0.00s)
+#12 4.459     --- PASS: FuzzPlaceOrder/seed#1 (0.00s)
+#12 4.459 === RUN   FuzzCancelOrder
+#12 4.459 === RUN   FuzzCancelOrder/seed#0
+#12 4.459 === RUN   FuzzCancelOrder/seed#1
+#12 4.459 === RUN   FuzzCancelOrder/seed#2
+#12 4.459 --- PASS: FuzzCancelOrder (0.00s)
+#12 4.459     --- PASS: FuzzCancelOrder/seed#0 (0.00s)
+#12 4.459     --- PASS: FuzzCancelOrder/seed#1 (0.00s)
+#12 4.459     --- PASS: FuzzCancelOrder/seed#2 (0.00s)
+#12 4.459 PASS
+#12 4.459 ok  	order-matching-engine/internal/engine	0.002s
+#12 4.464 
+#12 4.464 3. RACE DETECTOR
+#12 4.466 go: -race requires cgo; enable cgo by setting CGO_ENABLED=1
+#12 ERROR: process "/bin/sh -c echo \"=== RUNNING COMPREHENSIVE TEST SUITE ===\" &&     echo \"\" &&     echo \"1. BUILD TEST\" &&     go build ./... &&     echo \"✅ Build successful\" &&     echo \"\" &&     echo \"2. UNIT TESTS\" &&     go test ./... -v &&     echo \"\" &&     echo \"3. RACE DETECTOR\" &&     go test -race ./... &&     echo \"\" &&     echo \"4. BENCHMARKS\" &&     go test -bench=BenchmarkMatchingEngine -benchmem ./internal/engine &&     echo \"\" &&     echo \"5. CODE VET\" &&     go vet ./... &&     echo \"\" &&     echo \"✅ ALL TESTS PASSED IN DOCKER\"" did not complete successfully: exit code: 2
+------
+ > [tester 6/6] RUN echo "=== RUNNING COMPREHENSIVE TEST SUITE ===" &&     echo "" &&     echo "1. BUILD TEST" &&     go build ./... &&     echo "✅ Build successful" &&     echo "" &&     echo "2. UNIT TESTS" &&     go test ./... -v &&     echo "" &&     echo "3. RACE DETECTOR" &&     go test -race ./... &&     echo "" &&     echo "4. BENCHMARKS" &&     go test -bench=BenchmarkMatchingEngine -benchmem ./internal/engine &&     echo "" &&     echo "5. CODE VET" &&     go vet ./... &&     echo "" &&     echo "✅ ALL TESTS PASSED IN DOCKER":
+4.459 === RUN   FuzzCancelOrder/seed#2
+4.459 --- PASS: FuzzCancelOrder (0.00s)
+4.459     --- PASS: FuzzCancelOrder/seed#0 (0.00s)
+4.459     --- PASS: FuzzCancelOrder/seed#1 (0.00s)
+4.459     --- PASS: FuzzCancelOrder/seed#2 (0.00s)
+4.459 PASS
+4.459 ok  	order-matching-engine/internal/engine	0.002s
+4.464 
+4.464 3. RACE DETECTOR
+4.466 go: -race requires cgo; enable cgo by setting CGO_ENABLED=1
+------
+Dockerfile.test:14
+--------------------
+  13 |     # Run comprehensive tests
+  14 | >>> RUN echo "=== RUNNING COMPREHENSIVE TEST SUITE ===" && \
+  15 | >>>     echo "" && \
+  16 | >>>     echo "1. BUILD TEST" && \
+  17 | >>>     go build ./... && \
+  18 | >>>     echo "✅ Build successful" && \
+  19 | >>>     echo "" && \
+  20 | >>>     echo "2. UNIT TESTS" && \
+  21 | >>>     go test ./... -v && \
+  22 | >>>     echo "" && \
+  23 | >>>     echo "3. RACE DETECTOR" && \
+  24 | >>>     go test -race ./... && \
+  25 | >>>     echo "" && \
+  26 | >>>     echo "4. BENCHMARKS" && \
+  27 | >>>     go test -bench=BenchmarkMatchingEngine -benchmem ./internal/engine && \
+  28 | >>>     echo "" && \
+  29 | >>>     echo "5. CODE VET" && \
+  30 | >>>     go vet ./... && \
+  31 | >>>     echo "" && \
+  32 | >>>     echo "✅ ALL TESTS PASSED IN DOCKER"
+  33 |     
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c echo \"=== RUNNING COMPREHENSIVE TEST SUITE ===\" &&     echo \"\" &&     echo \"1. BUILD TEST\" &&     go build ./... &&     echo \"✅ Build successful\" &&     echo \"\" &&     echo \"2. UNIT TESTS\" &&     go test ./... -v &&     echo \"\" &&     echo \"3. RACE DETECTOR\" &&     go test -race ./... &&     echo \"\" &&     echo \"4. BENCHMARKS\" &&     go test -bench=BenchmarkMatchingEngine -benchmem ./internal/engine &&     echo \"\" &&     echo \"5. CODE VET\" &&     go vet ./... &&     echo \"\" &&     echo \"✅ ALL TESTS PASSED IN DOCKER\"" did not complete successfully: exit code: 2
