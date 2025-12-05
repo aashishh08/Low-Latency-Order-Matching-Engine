@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/go-chi/chi/v5"
 
@@ -43,17 +44,18 @@ func (a *API) health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) metrics(w http.ResponseWriter, r *http.Request) {
-	// In a later step we will wire real metrics.
+	p50, p99, p999 := a.Engine.Metrics.Percentiles()
+
 	json.NewEncoder(w).Encode(map[string]any{
-		"orders_received":   0,
-		"orders_matched":    0,
-		"orders_cancelled":  0,
-		"orders_in_book":    0,
-		"trades_executed":   0,
-		"latency_p50_ms":    0,
-		"latency_p99_ms":    0,
-		"latency_p999_ms":   0,
-		"throughput_orders": 0,
+		"orders_received":   atomic.LoadUint64(&a.Engine.Metrics.OrdersReceived),
+		"orders_matched":    atomic.LoadUint64(&a.Engine.Metrics.OrdersMatched),
+		"orders_cancelled":  atomic.LoadUint64(&a.Engine.Metrics.OrdersCancelled),
+		"trades_executed":   atomic.LoadUint64(&a.Engine.Metrics.TradesExecuted),
+		"orders_in_book":    a.Engine.OrdersInBook(),
+		"latency_p50_ms":    p50,
+		"latency_p99_ms":    p99,
+		"latency_p999_ms":   p999,
+		"throughput_orders": a.Engine.Metrics.Throughput(),
 	})
 }
 

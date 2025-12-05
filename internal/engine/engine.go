@@ -3,11 +3,13 @@ package engine
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
 
 	"order-matching-engine/internal/common"
+	"order-matching-engine/internal/metrics"
 	"order-matching-engine/internal/orderbook"
 )
 
@@ -25,13 +27,16 @@ type MatchingEngine struct {
 
 	tradesMu sync.Mutex
 	trades   []*common.Trade
+
+	Metrics *metrics.Metrics
 }
 
 func NewMatchingEngine() *MatchingEngine {
 	return &MatchingEngine{
-		books:  make(map[string]*orderbook.OrderBook),
-		orders: make(map[string]*common.Order),
-		trades: make([]*common.Trade, 0, 1024),
+		books:   make(map[string]*orderbook.OrderBook),
+		orders:  make(map[string]*common.Order),
+		trades:  make([]*common.Trade, 0, 1024),
+		Metrics: metrics.NewMetrics(),
 	}
 }
 
@@ -84,6 +89,9 @@ func validateOrderRequest(req *common.Order) error {
 // PlaceOrder is the main entry point for new incoming orders.
 // It handles validation, matching, and book insertion for remaining quantities.
 func (m *MatchingEngine) PlaceOrder(req *common.Order) (*common.Order, []*common.Trade, error) {
+	start := time.Now()
+	atomic.AddUint64(&m.Metrics.OrdersReceived, 1)
+
 	if err := validateOrderRequest(req); err != nil {
 		return nil, nil, err
 	}
@@ -139,6 +147,14 @@ func (m *MatchingEngine) PlaceOrder(req *common.Order) (*common.Order, []*common
 
 	// Store final order state in lookup map.
 	m.orders[incoming.ID] = incoming
+
+	if len(trades) > 0 {
+		atomic.AddUint64(&m.Metrics.OrdersMatched, 1)
+		atomic.AddUint64(&m.Metrics.TradesExecuted, uint64(len(trades)))
+	}
+
+	durationMs := float64(time.Since(start).Microseconds()) / 1000.0
+	m.Metrics.RecordLatency(durationMs)
 
 	return incoming, trades, nil
 }
@@ -328,6 +344,8 @@ func (m *MatchingEngine) executeMarketOrder(book *orderbook.OrderBook, o *common
 // marks it as cancelled. It is synchronous: once it returns, the order will
 // not participate in future matches.
 func (m *MatchingEngine) CancelOrder(orderID string) error {
+	atomic.AddUint64(&m.Metrics.OrdersCancelled, 1)
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -404,4 +422,28 @@ func (m *MatchingEngine) addTrade(t *common.Trade) {
 	m.tradesMu.Lock()
 	m.trades = append(m.trades, t)
 	m.tradesMu.Unlock()
+}
+
+// OrdersInBook counts all active orders across all books
+func (m *MatchingEngine) OrdersInBook() uint64 {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	total := uint64(0)
+	for _, b := range m.books {
+		for _, level := range b.Bids.Levels {
+			for _, o := range level.Orders {
+				if o.Quantity > o.FilledQty {
+					total++
+				}
+			}
+		}
+		for _, level := range b.Asks.Levels {
+			for _, o := range level.Orders {
+				if o.Quantity > o.FilledQty {
+					total++
+				}
+			}
+		}
+	}
+	return total
 }
