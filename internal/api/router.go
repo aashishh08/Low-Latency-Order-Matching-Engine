@@ -5,32 +5,54 @@ import (
 	"net/http"
 	"strconv"
 	"sync/atomic"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"order-matching-engine/internal/common"
 	"order-matching-engine/internal/engine"
+	"order-matching-engine/internal/marketdata"
 )
 
 type API struct {
-	Engine *engine.MatchingEngine
+	Engine     *engine.MatchingEngine
+	WSHub      *WSHub
+	MarketData *marketdata.MarketData
+	startTime  time.Time
 }
 
 func NewAPI(e *engine.MatchingEngine) *API {
-	return &API{Engine: e}
+	return &API{
+		Engine:     e,
+		WSHub:      NewWSHub(),
+		MarketData: marketdata.NewMarketData(),
+		startTime:  time.Now(),
+	}
 }
 
 func (a *API) Router() http.Handler {
 	r := chi.NewRouter()
 
+	// Health and metrics
 	r.Get("/health", a.health)
+	r.Get("/health/live", a.healthLive)
+	r.Get("/health/ready", a.healthReady)
 	r.Get("/metrics", a.metrics)
+	r.Get("/metrics/prometheus", a.metricsPrometheus)
 
+	// Core order endpoints
 	r.Post("/api/v1/orders", a.placeOrder)
 	r.Delete("/api/v1/orders/{id}", a.cancelOrder)
 	r.Get("/api/v1/orders/{id}", a.getOrder)
-
 	r.Get("/api/v1/orderbook/{symbol}", a.getOrderBook)
+
+	// Market data endpoints
+	r.Get("/api/v1/market/ohlcv/{symbol}", a.getOHLCV)
+	r.Get("/api/v1/market/trades/{symbol}", a.getTrades)
+	r.Get("/api/v1/market/depth/{symbol}", a.getDepth)
+
+	// WebSocket endpoint
+	r.Get("/ws/{symbol}", a.handleWebSocket)
 
 	return r
 }
@@ -40,7 +62,23 @@ func (a *API) Router() http.Handler {
 // ---------------------------
 
 func (a *API) health(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(map[string]any{"status": "healthy"})
+	json.NewEncoder(w).Encode(map[string]any{
+		"status": "healthy",
+		"uptime": time.Since(a.startTime).Seconds(),
+	})
+}
+
+func (a *API) healthLive(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(map[string]any{"status": "live"})
+}
+
+func (a *API) healthReady(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(map[string]any{"status": "ready"})
+}
+
+func (a *API) metricsPrometheus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+	w.Write([]byte(a.Engine.Metrics.PrometheusFormat()))
 }
 
 func (a *API) metrics(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +119,12 @@ func (a *API) placeOrder(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	}
+
+	// Broadcast trades via WebSocket & record market data
+	for _, trade := range trades {
+		a.WSHub.BroadcastTrade(order.Symbol, trade)
+		a.MarketData.RecordTrade(trade, order.Symbol)
 	}
 
 	resp := map[string]any{

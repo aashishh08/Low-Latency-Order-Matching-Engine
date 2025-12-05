@@ -3,17 +3,12 @@ package engine_test
 import (
 	"math/rand"
 	"testing"
-	"time"
 
 	"order-matching-engine/internal/common"
 	"order-matching-engine/internal/engine"
 )
 
 var symbols = []string{"AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func randomSymbol() string {
 	return symbols[rand.Intn(len(symbols))]
