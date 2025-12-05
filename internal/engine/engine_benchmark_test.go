@@ -80,28 +80,3 @@ func BenchmarkMatchingEngine(b *testing.B) {
 		})
 	}
 }
-
-// Benchmark cancellation (also realistic)
-func BenchmarkCancelOrders(b *testing.B) {
-	eng := engine.NewMatchingEngine()
-
-	ids := make([]string, 0, b.N)
-
-	// Preload with many orders
-	for i := 0; i < b.N; i++ {
-		o, _, _ := eng.PlaceOrder(&common.Order{
-			Symbol:   randomSymbol(),
-			Side:     randomSide(),
-			Type:     common.OrderTypeLimit,
-			Price:    randomPrice(),
-			Quantity: randomQty(),
-		})
-		ids = append(ids, o.ID)
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_ = eng.CancelOrder(ids[i])
-	}
-}
