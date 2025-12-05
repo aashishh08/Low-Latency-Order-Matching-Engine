@@ -351,10 +351,31 @@ OrderBook Message:
 
 # 6. Running the Server
 
-## Option 1: Direct (Native Go)
+## Prerequisites
+
+First, ensure all dependencies are downloaded and the code compiles:
 
 ```bash
+# Download dependencies
+go mod download
+
+# Build the project (optional but recommended)
+go build ./...
+
+# Or build the server binary
+go build -o server ./cmd/server
+```
+
+## Option 1: Direct (Native Go)
+
+**Quick start (compile and run):**
+```bash
 go run ./cmd/server
+```
+
+**Or run the built binary:**
+```bash
+./server
 ```
 
 Server runs on `:8080` (configurable via `PORT` env var)
