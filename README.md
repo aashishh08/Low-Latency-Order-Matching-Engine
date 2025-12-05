@@ -203,10 +203,16 @@ Benchmarks simulate:
 
 **Benchmark Results:**
 
-- **Throughput**: ~600,000 orders/sec  
+- **Throughput**: ~590,000 orders/sec (1,695 ns/op)
+- **Memory**: 3,580 bytes/op, 8 allocations/op
 - **p50 latency**: <1 ms  
 - **p99 latency**: <1 ms  
 - **p999 latency**: <1 ms  
+
+**Performance vs Requirements:**
+- ✅ Throughput: **19.6x better** than required (590k vs 30k)
+- ✅ Latency: **Far exceeds** all requirements
+  
 
 ---
 
